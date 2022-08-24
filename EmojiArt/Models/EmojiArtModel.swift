@@ -19,7 +19,7 @@ struct EmojiArtModel {
     
     init() { }
     
-    struct Emoji {
+    struct Emoji: Identifiable, Hashable {
         let id: Int
         let text: String
         var x: Int
