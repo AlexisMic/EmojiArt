@@ -36,7 +36,5 @@ struct EmojiArtModel {
         
     }
     
-    enum Background {
-    case blank, URL, Image
-    }
+
 }
