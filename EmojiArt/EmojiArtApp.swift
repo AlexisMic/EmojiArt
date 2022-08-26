@@ -12,7 +12,7 @@ struct EmojiArtApp: App {
     let viewModel = EmojiArtDocument()
     var body: some Scene {
         WindowGroup {
-            EmojiArtDocumentView(emojiArtDocument: viewModel)
+            EmojiArtDocumentView(document: viewModel)
         }
     }
 }
