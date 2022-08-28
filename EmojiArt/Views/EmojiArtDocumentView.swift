@@ -16,6 +16,18 @@ struct EmojiArtDocumentView: View {
     
     @ObservedObject var document: EmojiArtDocument
     
+    private func isEmojiSelected(_ emoji: Emoji) -> Bool {
+        if document.selectedEmojis.index(matching: emoji) != nil {
+            return true
+        } else {
+            return false
+        }
+    }
+    
+    private var atLeastOneEmojiSelected: Bool {
+        !document.selectedEmojis.isEmpty
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             documentBody
@@ -32,15 +44,18 @@ struct EmojiArtDocumentView: View {
                         .position(convertFromEmojiCoordinates((0, 0), in: geometry))
                 )
                 .gesture(doubleTapToZoom(in: geometry.size))
+                .gesture(tapBackground().exclusively(before: doubleTapToZoom(in: geometry.size)))
                 if document.backgroundImageFetchStatus == .fetching {
                     ProgressView()
                         .scaleEffect(2)
                 } else {
                     ForEach(document.emojis) { emoji in
                         Text(emoji.text)
-                            .font(.system(size: fontSize(emoji)))
-                            .scaleEffect(zoomScale)
+                            .font(.system(size: fontSize(emoji) * zoomScale(for: emoji)))
+                            .background(Circle().stroke(Color.red).opacity(isEmojiSelected(emoji) ? 0.5 : 0))
+//                            .scaleEffect(zoomScale)
                             .position(emojiPosition(emoji, in: geometry))
+                            .gesture(tapEmoji(emoji).exclusively(before: doubleTapToZoom(in: geometry.size)))
                     }
                 }
             }
@@ -55,6 +70,22 @@ struct EmojiArtDocumentView: View {
     private var pallete: some View {
         ScrollingViewEmojis(emojis: emojisTest)
             .font(.system(size: emojiFontSize))
+    }
+    
+    private func tapEmoji(_ emoji: Emoji) -> some Gesture {
+        TapGesture(count: 1)
+            .onEnded {
+                withAnimation {
+                    document.selectedEmojis.toggleMembership(of: emoji)
+                }
+            }
+    }
+    
+    private func tapBackground() -> some Gesture {
+        TapGesture(count: 1)
+            .onEnded {
+                document.selectedEmojis.removeAll()
+            }
     }
     
     private func drop(providers: [NSItemProvider], at location: CGPoint, in geometry: GeometryProxy) -> Bool {
@@ -126,7 +157,15 @@ struct EmojiArtDocumentView: View {
     @GestureState private var gestureZoomScale: CGFloat = 1
     
     private var zoomScale: CGFloat {
-        steadyStateZoomScale * gestureZoomScale
+        steadyStateZoomScale * (document.selectedEmojis.isEmpty ? gestureZoomScale : 1)
+    }
+    
+    private func zoomScale(for emoji: Emoji) -> CGFloat {
+        if isEmojiSelected(emoji) {
+            return steadyStateZoomScale * gestureZoomScale
+        } else {
+            return zoomScale
+        }
     }
 
     private func zoomGesture() -> some Gesture {
@@ -135,7 +174,14 @@ struct EmojiArtDocumentView: View {
                 gestureZoomScale = latestGestureScale
             }
             .onEnded { zoom in
-                steadyStateZoomScale *= zoom
+                if document.selectedEmojis.isEmpty {
+                    steadyStateZoomScale *= zoom
+                    
+                } else {
+                    document.selectedEmojis.forEach { emoji in
+                        document.scaleEmoji(emoji, by: zoom)
+                    }
+                }
             }
     }
     

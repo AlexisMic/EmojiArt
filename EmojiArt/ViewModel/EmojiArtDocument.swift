@@ -20,6 +20,8 @@ class EmojiArtDocument: ObservableObject {
         }
     }
     
+    @Published var selectedEmojis = Set<Emoji>()
+    
     init() {
         emojiArt = EmojiArtModel()
     }

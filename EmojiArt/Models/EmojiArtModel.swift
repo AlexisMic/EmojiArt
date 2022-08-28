@@ -33,6 +33,7 @@ struct EmojiArtModel {
             self.x = position.x
             self.y = position.y
             self.size = size
+            
         }
         
     }
