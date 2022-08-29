@@ -18,6 +18,10 @@ struct EmojiArtModel {
         emojis.append(Emoji(id: uniqueEmojiId, text: text, at: (x: position.x, y: position.y), size: size))
     }
     
+    mutating func removeEmoji(_ emoji: Emoji) {
+        emojis.remove(at: emojis.index(matching: emoji)!)
+    }
+    
     init() { }
     
     struct Emoji: Identifiable, Hashable {

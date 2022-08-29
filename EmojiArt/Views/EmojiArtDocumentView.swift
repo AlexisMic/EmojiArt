@@ -24,16 +24,16 @@ struct EmojiArtDocumentView: View {
         }
     }
     
-    private var atLeastOneEmojiSelected: Bool {
-        !document.selectedEmojis.isEmpty
-    }
-    
     var body: some View {
         VStack(spacing: 0) {
             documentBody
             pallete
         }
     }
+    
+    @State private var showRemoveEmojiAlert = false
+    @State private var confirmDeleteEmoji = false
+
     
     private var documentBody: some View {
         GeometryReader { geometry in
@@ -53,9 +53,20 @@ struct EmojiArtDocumentView: View {
                         Text(emoji.text)
                             .font(.system(size: fontSize(emoji) * zoomScale(for: emoji)))
                             .background(Circle().stroke(Color.red).opacity(isEmojiSelected(emoji) ? 0.5 : 0))
-//                            .scaleEffect(zoomScale)
                             .position(emojiPosition(emoji, in: geometry))
                             .gesture(tapEmoji(emoji).exclusively(before: doubleTapToZoom(in: geometry.size)))
+                            .gesture(dragEmojisGesture(emoji))
+                            .gesture(longPressGesture(emoji))
+                            .alert(isPresented: $showRemoveEmojiAlert) {
+                                Alert(
+                                    title: Text("Delete Emoji"),
+                                    message: Text("Are you sure that you want to delete this emoji?"),
+                                    primaryButton: .destructive(Text("Delete")) {
+                                        document.removeEmoji(emoji)
+                                    },
+                                    secondaryButton: .cancel() {}
+                                )
+                            }
                     }
                 }
             }
@@ -64,6 +75,7 @@ struct EmojiArtDocumentView: View {
                 return drop(providers: providers, at: location, in: geometry)
             }
             .gesture(panGesture().simultaneously(with: zoomGesture()))
+            
         }
     }
     
@@ -78,6 +90,13 @@ struct EmojiArtDocumentView: View {
                 withAnimation {
                     document.selectedEmojis.toggleMembership(of: emoji)
                 }
+            }
+    }
+    
+    private func longPressGesture(_ emoji: Emoji) -> some Gesture {
+        LongPressGesture()
+            .onEnded {_ in
+                showRemoveEmojiAlert = true
             }
     }
     
@@ -114,7 +133,26 @@ struct EmojiArtDocumentView: View {
     }
     
     private func emojiPosition(_ emoji: Emoji, in geometry: GeometryProxy) -> CGPoint {
-        convertFromEmojiCoordinates((emoji.x, emoji.y), in: geometry)
+        if isEmojiSelected(emoji) {
+            return convertFromEmojiCoordinatesForSelectedEmojis((emoji.x, emoji.y), in: geometry)
+        }
+        return convertFromEmojiCoordinatesForNonSelectedEmojis((emoji.x, emoji.y), in: geometry)
+    }
+    
+    private func convertFromEmojiCoordinatesForSelectedEmojis(_ location: (x: Int, y: Int), in geometry: GeometryProxy) -> CGPoint {
+        let center = geometry.frame(in: .local).center
+        return CGPoint(
+            x: CGFloat(location.x) * zoomScale + center.x + gestureDragEmojisOffset.width,
+            y: CGFloat(location.y) * zoomScale + center.y + gestureDragEmojisOffset.height
+        )
+    }
+    
+    private func convertFromEmojiCoordinatesForNonSelectedEmojis(_ location: (x: Int, y: Int), in geometry: GeometryProxy) -> CGPoint {
+        let center = geometry.frame(in: .local).center
+        return CGPoint(
+            x: CGFloat(location.x) * zoomScale + center.x,
+            y: CGFloat(location.y) * zoomScale + center.y
+        )
     }
     
     private func convertToEmojiCoordinates(_ location: CGPoint, in geometry: GeometryProxy) -> (x: Int, y: Int) {
@@ -134,6 +172,29 @@ struct EmojiArtDocumentView: View {
         )
     }
     
+    // Drag the emoji
+//    @State private var steadyStateEmojiOffSet: CGSize = .zero
+    @GestureState private var gestureDragEmojisOffset: CGSize = .zero
+    
+    private var emojiOffSet: CGSize {
+        gestureDragEmojisOffset * zoomScale
+    }
+    
+    private func dragEmojisGesture(_ emoji: Emoji) -> some Gesture {
+            return DragGesture()
+                .updating($gestureDragEmojisOffset) { latestDragGestureValue, gestureDragEmojisOffset, transition in
+                        gestureDragEmojisOffset = latestDragGestureValue.translation / zoomScale
+                    print(gestureDragEmojisOffset)
+                }
+                .onEnded { finalDragGestureValue in
+                    let distanceDragged = finalDragGestureValue.translation / zoomScale
+                        document.selectedEmojis.forEach { emoji in
+                                document.moveEmoji(emoji, by: distanceDragged)
+                            print(gestureDragEmojisOffset)
+                        }
+                }
+        }
+        
     // Drag the image (panning off)
     @State private var steadyStatePanOffSet: CGSize = CGSize.zero
     @GestureState private var gesturePanOffSet: CGSize = CGSize.zero
@@ -146,10 +207,14 @@ struct EmojiArtDocumentView: View {
     private func panGesture() -> some Gesture {
         DragGesture()
             .updating($gesturePanOffSet) { latestDragGestureValue, gesturePanOffSet, _ in
-                gesturePanOffSet = latestDragGestureValue.translation / zoomScale
+                if document.selectedEmojis.isEmpty {
+                    gesturePanOffSet = latestDragGestureValue.translation / zoomScale
+                }
             }
             .onEnded { finalDragGestureValue in
-                steadyStatePanOffSet = steadyStatePanOffSet + (finalDragGestureValue.translation / zoomScale)
+                if document.selectedEmojis.isEmpty {
+                    steadyStatePanOffSet = steadyStatePanOffSet + (finalDragGestureValue.translation / zoomScale)
+                }
             }
     }
     
@@ -228,7 +293,24 @@ struct ScrollingViewEmojis: View {
 }
 
 
-
+//// Drag the image (panning off)
+//@State private var steadyStatePanOffSet: CGSize = CGSize.zero
+//@GestureState private var gesturePanOffSet: CGSize = CGSize.zero
+//
+//private var panOffSet: CGSize {
+//    // using utility extensions to add CGSize
+//    (steadyStatePanOffSet + gesturePanOffSet) * zoomScale
+//}
+//
+//private func panGesture() -> some Gesture {
+//    DragGesture()
+//        .updating($gesturePanOffSet) { latestDragGestureValue, gesturePanOffSet, _ in
+//            gesturePanOffSet = latestDragGestureValue.translation / zoomScale
+//        }
+//        .onEnded { finalDragGestureValue in
+//            steadyStatePanOffSet = steadyStatePanOffSet + (finalDragGestureValue.translation / zoomScale)
+//        }
+//}
 
 
 
