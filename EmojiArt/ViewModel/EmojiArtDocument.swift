@@ -14,6 +14,7 @@ class EmojiArtDocument: ObservableObject {
     
     @Published private(set) var emojiArt: EmojiArtModel {
         didSet {
+            scheduleAutosave()
             if emojiArt.background != oldValue.background {
                 fetchBackgroundImageDataIfNecessary()
             }
@@ -23,7 +24,50 @@ class EmojiArtDocument: ObservableObject {
     @Published var selectedEmojis = Set<Emoji>()
     
     init() {
-        emojiArt = EmojiArtModel()
+        if let url = Autosave.url, let autosavedEmojiArt = try? EmojiArtModel(url: url) {
+            emojiArt = autosavedEmojiArt
+            fetchBackgroundImageDataIfNecessary()
+        } else {
+            emojiArt = EmojiArtModel()
+        }
+    }
+    
+    private var autoSaveTimer: Timer?
+    
+    private func scheduleAutosave() {
+        autoSaveTimer?.invalidate()
+        autoSaveTimer = Timer.scheduledTimer(withTimeInterval: Autosave.waitToSaveTime, repeats: false) { _ in
+            self.autosave()
+        }
+    }
+    
+    private struct Autosave {
+        static let filename = "autosaved.emojiart"
+        static var url: URL? {
+            let documentDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            return documentDirectory?.appendingPathComponent(filename)
+        }
+        static let waitToSaveTime: TimeInterval = 5
+    }
+    
+    private func autosave() {
+        if let url = Autosave.url {
+            save(to: url)
+        }
+    }
+    
+    private func save(to url: URL) {
+        let thisFunction = "\(String(describing: self)). \(#function)"
+        do {
+            let data: Data = try emojiArt.json()
+            try data.write(to: url)
+
+        } catch let encodingError where encodingError is EncodingError {
+        
+        } catch {
+            print("\(thisFunction) error = \(error)")
+        }
+        
     }
     
     var emojis: [Emoji] {

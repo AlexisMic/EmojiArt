@@ -27,7 +27,7 @@ struct EmojiArtDocumentView: View {
     var body: some View {
         VStack(spacing: 0) {
             documentBody
-            pallete
+            PaletteChooser()
         }
     }
     
@@ -77,11 +77,6 @@ struct EmojiArtDocumentView: View {
             .gesture(panGesture().simultaneously(with: zoomGesture()))
             
         }
-    }
-    
-    private var pallete: some View {
-        ScrollingViewEmojis(emojis: emojisTest)
-            .font(.system(size: emojiFontSize))
     }
     
     private func tapEmoji(_ emoji: Emoji) -> some Gesture {
@@ -173,7 +168,6 @@ struct EmojiArtDocumentView: View {
     }
     
     // Drag the emoji
-//    @State private var steadyStateEmojiOffSet: CGSize = .zero
     @GestureState private var gestureDragEmojisOffset: CGSize = .zero
     
     private var emojiOffSet: CGSize {
@@ -184,13 +178,11 @@ struct EmojiArtDocumentView: View {
             return DragGesture()
                 .updating($gestureDragEmojisOffset) { latestDragGestureValue, gestureDragEmojisOffset, transition in
                         gestureDragEmojisOffset = latestDragGestureValue.translation / zoomScale
-                    print(gestureDragEmojisOffset)
                 }
                 .onEnded { finalDragGestureValue in
                     let distanceDragged = finalDragGestureValue.translation / zoomScale
                         document.selectedEmojis.forEach { emoji in
                                 document.moveEmoji(emoji, by: distanceDragged)
-                            print(gestureDragEmojisOffset)
                         }
                 }
         }
@@ -267,50 +259,8 @@ struct EmojiArtDocumentView: View {
             steadyStateZoomScale = min(hZoom, vZoom)
         }
     }
-    
-    
- 
-    var emojisTest = "😆😍🐨🙉🐣🍈🍅🥒🎾🥋🏂🚗🚔🚟🖥📱⏰🔆🅿️🇧🇷🇺🇸🇪🇺🥫🌯🍱🏆🥁🎻"
-    
 }
 
-struct ScrollingViewEmojis: View {
-    
-    let emojis: String
-    
-    var body: some View {
-        ScrollView(.horizontal) {
-            HStack {
-                ForEach(emojis.map({String($0)}), id:\.self) { emoji in
-                    Text(emoji)
-                        .onDrag { NSItemProvider(object: emoji as NSString) }
-                }
-            }
-        }
-    }
-    
-    
-}
-
-
-//// Drag the image (panning off)
-//@State private var steadyStatePanOffSet: CGSize = CGSize.zero
-//@GestureState private var gesturePanOffSet: CGSize = CGSize.zero
-//
-//private var panOffSet: CGSize {
-//    // using utility extensions to add CGSize
-//    (steadyStatePanOffSet + gesturePanOffSet) * zoomScale
-//}
-//
-//private func panGesture() -> some Gesture {
-//    DragGesture()
-//        .updating($gesturePanOffSet) { latestDragGestureValue, gesturePanOffSet, _ in
-//            gesturePanOffSet = latestDragGestureValue.translation / zoomScale
-//        }
-//        .onEnded { finalDragGestureValue in
-//            steadyStatePanOffSet = steadyStatePanOffSet + (finalDragGestureValue.translation / zoomScale)
-//        }
-//}
 
 
 
