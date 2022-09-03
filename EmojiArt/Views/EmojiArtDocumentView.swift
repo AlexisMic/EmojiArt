@@ -32,6 +32,7 @@ struct EmojiArtDocumentView: View {
     }
     
     @State private var showRemoveEmojiAlert = false
+    @State private var backgroundImageAlert: IdentifiableAlert?
     @State private var confirmDeleteEmoji = false
 
     
@@ -74,8 +75,29 @@ struct EmojiArtDocumentView: View {
             .onDrop(of: [.plainText, .url, .image], isTargeted: nil) { providers, location in
                 return drop(providers: providers, at: location, in: geometry)
             }
+            .alert(item: $backgroundImageAlert) { alertToShow in
+                alertToShow.alert()
+            }
+//            .alert(item: $showDropImageAlert) {
+//                Alert(title: Text("Bad image"), message: Text("Can't upload this image."), dismissButton: .default(Text("OK")))
+//            }
             .gesture(panGesture().simultaneously(with: zoomGesture()))
+            .onChange(of: document.backgroundImageFetchStatus) { status in
+                switch status {
+                case .failed(let url) :
+                    imageAlert(url)
+//                    showDropImageAlert = true
+                default:
+                    break
+                }
+            }
             
+        }
+    }
+    
+    private func imageAlert(_ url: URL) {
+        backgroundImageAlert = IdentifiableAlert(id: "url"+url.absoluteString) {
+            Alert(title: Text("Bad image"), message: Text("Can't upload this image from \(url)."), dismissButton: .default(Text("OK")))
         }
     }
     

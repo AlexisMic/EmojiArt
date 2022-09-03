@@ -11,6 +11,9 @@ struct PaletteChooser: View {
     
     @EnvironmentObject var store: PaletteStore
     @State private var indexPalette = 0
+    @State private var showManagerSheet = false
+    @State private var editPalette: Palette?
+    
     let emojiFontSize: CGFloat = 40
     var emojiFont: Font { .system(size: emojiFontSize)}
     
@@ -18,25 +21,87 @@ struct PaletteChooser: View {
         let palette = store.palette(at: indexPalette)
         HStack {
             paletteChooserButton
-            ScrollingViewEmojis(emojis: palette.emojis)
-                .font(emojiFont)
+            body(for: palette)
         }
+        .clipped()
     }
     
     private var paletteChooserButton: some View {
         Button {
             let maxIndex = store.palettes.count - 1
             if indexPalette < maxIndex {
-                indexPalette += 1
+                withAnimation {
+                    indexPalette += 1
+                }
             } else {
-                indexPalette = 0
+                withAnimation() {
+                    indexPalette = 0
+                }
             }
         } label: {
             Image(systemName: "paintpalette")
                 .font(emojiFont)
                 .padding(.horizontal)
         }
-
+        .contextMenu { contextMenu }
+    }
+    
+    @ViewBuilder
+    private var contextMenu: some View {
+        AnimatedActionButton(title: "Edit", systemImage: "pencil") {
+//            showSheet = true
+            editPalette = store.palettes[indexPalette]
+        }
+        AnimatedActionButton(title: "New", systemImage: "plus") {
+            store.insertPalette(name: "New", emojis: "", at: indexPalette)
+//            showShet = true
+            editPalette = store.palettes[indexPalette]
+        }
+        AnimatedActionButton(title: "Delete", systemImage: "minus.circle") {
+            indexPalette = store.removePalette(at: indexPalette)
+        }
+        gotoMenu
+        AnimatedActionButton(title: "Manager", systemImage: "slider.vertical.3") {
+            showManagerSheet = true
+        }
+    }
+    
+    private var gotoMenu: some View {
+        Menu {
+            ForEach (store.palettes) { palette in
+                AnimatedActionButton(title: palette.name) {
+                    if let index = store.palettes.index(matching: palette) {
+                        indexPalette = index
+                    }
+                }
+            }
+        } label: {
+            Label("Go To", systemImage: "text.insert")
+        }
+    }
+    
+    private func body(for palette: Palette) -> some View {
+        HStack {
+            Text(palette.name)
+            ScrollingViewEmojis(emojis: palette.emojis)
+                .font(emojiFont)
+        }
+        .id(palette.id)
+        .transition(rollTransition)
+//        //Changed the bool showSheet for a optional check
+//        .popover(isPresented: $showSheet) {
+//            PaletteEditor(palette: $store.palettes[indexPalette])
+//        }
+        .popover(item: $editPalette) { palette in
+            PaletteEditor(palette: $store.palettes[palette])
+        }
+        .sheet(isPresented: $showManagerSheet) {
+            PaletteManager()
+        }
+    }
+    
+    private var rollTransition: AnyTransition {
+        AnyTransition.asymmetric(insertion: .offset(x: 0, y: emojiFontSize), removal: .offset(x: 0, y: -emojiFontSize))
     }
 }
 
