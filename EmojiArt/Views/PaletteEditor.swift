@@ -58,6 +58,7 @@ struct PaletteEditor: View {
     }
     
     private func addEmoji() {
+        print(emojiToAdd.filter({$0.isEmoji}))
         withAnimation {
             palette.emojis += emojiToAdd
                 .filter({ $0.isEmoji})

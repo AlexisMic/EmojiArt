@@ -10,7 +10,7 @@ import SwiftUI
 struct PaletteChooser: View {
     
     @EnvironmentObject var store: PaletteStore
-    @State private var indexPalette = 0
+    @SceneStorage("PaletteChooser.chosenPaletteIndex") private var indexPalette = 0
     @State private var showManagerSheet = false
     @State private var editPalette: Palette?
     
