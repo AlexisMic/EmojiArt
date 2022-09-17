@@ -43,23 +43,11 @@ struct PaletteManager: View {
             }
             .navigationTitle("Manage Palettes")
             .navigationBarTitleDisplayMode(.inline)
+            .dismissable {
+                presentationMode.wrappedValue.dismiss()
+            }
             .toolbar {
-                ToolbarItem {
-                    EditButton()
-                }
-                ToolbarItem(placement: .navigationBarLeading) {
-                    // this UIDevice verifies the device. In this case it doesn't show the button if it's an ipad
-                    if UIDevice.current.userInterfaceIdiom != .pad {
-                        Button("Close") {
-                            // This isPresented verification is not necessary, but remains as example of how to use it
-                            if presentationMode.wrappedValue.isPresented {
-                                presentationMode.wrappedValue.dismiss()
-                            }
-                        }
-                    } else {
-                        EmptyView()
-                    }
-                }
+                EditButton()
             }
             .environment(\.editMode, $editMode)
         }

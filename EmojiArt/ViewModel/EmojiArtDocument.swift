@@ -167,20 +167,20 @@ class EmojiArtDocument: ReferenceFileDocument {
     }
     
     func addEmoji(_ text: String, at location: (x: Int, y: Int), size: CGFloat, undoManager: UndoManager?) {
-        undoablyPerform(operation: "Set Background", with: undoManager) {
+        undoablyPerform(operation: "Add \(text)", with: undoManager) {
             emojiArt.addEmoji(text: text, at: location, size: Int(size))
         }
     }
     
     func removeEmoji(_ emoji: Emoji, undoManager: UndoManager?) {
-        undoablyPerform(operation: "Set Background", with: undoManager) {
+        undoablyPerform(operation: "Remove", with: undoManager) {
             emojiArt.removeEmoji(emoji)
         }
     }
     
     func moveEmoji(_ emoji: Emoji, by offset: CGSize, undoManager: UndoManager?) {
         if let index = emojis.index(matching: emoji) {
-            undoablyPerform(operation: "Set Background", with: undoManager) {
+            undoablyPerform(operation: "Move", with: undoManager) {
                 emojiArt.emojis[index].x += Int(offset.width)
                 emojiArt.emojis[index].y += Int(offset.height)
             }
@@ -189,7 +189,7 @@ class EmojiArtDocument: ReferenceFileDocument {
     
     func scaleEmoji(_ emoji: Emoji, by scale: CGFloat, undoManager: UndoManager?) {
         if let index = emojis.index(matching: emoji) {
-            undoablyPerform(operation: "Set Background", with: undoManager) {
+            undoablyPerform(operation: "Scale", with: undoManager) {
                 emojiArt.emojis[index].size = Int((CGFloat(emojiArt.emojis[index].size) * scale).rounded(.toNearestOrAwayFromZero))
             }
         }
