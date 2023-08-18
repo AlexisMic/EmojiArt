@@ -36,7 +36,7 @@ struct EmojiArtDocumentView: View {
     
     @State private var showRemoveEmojiAlert = false
     @State private var alertToShow: IdentifiableAlert?
-    @State private var confirmDeleteEmoji = false
+//    @State private var confirmDeleteEmoji = false
 
     
     private var documentBody: some View {
